@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:opsz,wght@8..144,400;8..144,700&family=DM+Sans:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-display: 'Instrument Serif', serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+html, body, #__next {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+}
