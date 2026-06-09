@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(forge install:*)",
+      "Bash(where:*)",
+      "Bash(forge build:*)",
+      "Bash(forge test:*)"
+    ]
+  }
+}

@@ -13,7 +13,7 @@ arbitrum_sepolia = "${ARBITRUM_SEPOLIA_RPC_URL}"
 [etherscan]
 arbitrum_sepolia = { key = "${ETHERSCAN_API_KEY}", url = "https://api-sepolia.arbiscan.io/api" }
 
-[chain]
+[profile.chain]
 # Arbitrum Sepolia
 421614 = { name = "arbitrum_sepolia", rpc = "${ARBITRUM_SEPOLIA_RPC_URL}", chain_id = 421614 }
 
