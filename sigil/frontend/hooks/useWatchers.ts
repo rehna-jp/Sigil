@@ -2,17 +2,18 @@
 
 import { useReadContracts, useAccount } from 'wagmi';
 import { CONTRACTS } from '../lib/constants';
-import { WatcherRegistryABI, MockPriceFeedABI } from '../lib/contracts';
+import { WatcherRegistryABI } from '../lib/contracts';
 import { useSigilStore, ActiveWatcher } from '../stores/sigil';
 import { useEffect } from 'react';
-
-const ETH_USD_FEED = '0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165'; // Chainlink Arb Sepolia ETH/USD
+import { useEthPrice } from './useEthPrice';
 
 const WATCHER_TYPE_MAP = ['PRICE', 'TIME', 'RISK', 'GOVERNANCE'] as const;
 const WATCHER_STATUS_MAP = ['ACTIVE', 'TRIGGERED', 'EXPIRED', 'CANCELLED'] as const;
 
 export function useWatchers(watcherIds: readonly `0x${string}`[]) {
   const { isConnected, chain } = useAccount();
+  const { updateWatcherPrice } = useSigilStore();
+  const currentEthPrice = useEthPrice();
   const registryAddr = CONTRACTS.arbitrumSepolia.WatcherRegistry;
 
   const watcherCalls = watcherIds.map((id) => ({
@@ -25,30 +26,19 @@ export function useWatchers(watcherIds: readonly `0x${string}`[]) {
   const { data: watcherData, isLoading } = useReadContracts({
     contracts: watcherCalls,
     query: {
-      enabled: isConnected && watcherIds.length > 0 && chain?.id === 421614,
+      enabled: watcherIds.length > 0 && (!isConnected || chain?.id === 421614),
       refetchInterval: 15_000,
     },
   });
 
-  // Fetch current ETH/USD price for price watchers
-  const { data: priceData } = useReadContracts({
-    contracts: [
-      {
-        address: ETH_USD_FEED as `0x${string}`,
-        abi: MockPriceFeedABI,
-        functionName: 'latestRoundData',
-      },
-    ],
-    query: {
-      enabled: isConnected && chain?.id === 421614,
-      refetchInterval: 15_000,
-    },
-  });
-
-  // Parse current price (Chainlink returns 8 decimals)
-  const currentEthPrice = priceData?.[0]?.status === 'success'
-    ? Number((priceData[0].result as readonly [bigint, bigint, bigint, bigint, bigint])[1]) / 1e8
-    : null;
+  const watcherIdsKey = watcherIds.join(',');
+  useEffect(() => {
+    if (currentEthPrice !== null && currentEthPrice !== undefined) {
+      watcherIds.forEach((id) => {
+        updateWatcherPrice(id, currentEthPrice);
+      });
+    }
+  }, [currentEthPrice, watcherIdsKey, updateWatcherPrice]);
 
   // Enrich and return watcher objects
   const enrichedWatchers: ActiveWatcher[] = (watcherData ?? [])

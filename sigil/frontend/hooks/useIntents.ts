@@ -150,7 +150,7 @@ function decodeWatcher(w: {
 
 export function useIntents() {
   const { address, isConnected, chain } = useAccount();
-  const { addIntent, activeIntents } = useSigilStore();
+  const { addIntent } = useSigilStore();
 
   const decomposerAddr = CONTRACTS.arbitrumSepolia.IntentDecomposer;
   const watcherRegistryAddr = CONTRACTS.arbitrumSepolia.WatcherRegistry;
@@ -264,7 +264,6 @@ export function useIntents() {
       };
 
       const intentId = rawIntent.intentId;
-      if (activeIntents.some((act) => act.id === intentId)) continue; // already tracked
 
       const status = STATUS_MAP[rawIntent.status] as OnChainStatus ?? 'PENDING';
 
@@ -318,7 +317,7 @@ export function useIntents() {
         createdAt: Number(rawIntent.timestamp) * 1000,
       });
     }
-  }, [intentResults, watcherResults, intentIds, activeIntents, addIntent]);
+  }, [intentResults, watcherResults, intentIds, addIntent]);
 
   return {
     intentIds: intentIds ?? [],

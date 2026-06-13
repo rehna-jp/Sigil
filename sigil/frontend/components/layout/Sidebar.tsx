@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Feather, Clock, Zap } from 'lucide-react';
 import { SigilLogo } from './SigilLogo';
+import { useEthPrice } from '../../hooks/useEthPrice';
 
 const NAV_ITEMS = [
   {
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const ethPrice = useEthPrice();
 
   return (
     <aside className="w-56 hidden md:flex flex-col h-full bg-sigil-primary border-r border-white/[0.06]">
@@ -83,7 +85,15 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-white/[0.06]">
+      <div className="px-5 py-4 border-t border-white/[0.06] space-y-2">
+        {ethPrice !== null && (
+          <div className="flex items-center justify-between text-xs text-text-secondary">
+            <span>ETH/USD</span>
+            <span className="font-mono font-medium text-emerald-400">
+              ${ethPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+        )}
         <div className="flex items-center gap-2 text-xs text-text-tertiary">
           <Zap size={12} className="text-amethyst-500" />
           <span>Arbitrum Sepolia</span>

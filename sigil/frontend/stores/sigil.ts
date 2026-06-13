@@ -114,7 +114,7 @@ const DEMO_INTENT: ActiveIntent = {
   summary: 'Put 0.5 ETH into Aave for yield. Exit to USDC if ETH drops below $3,500.',
   status: 'ACTIVE',
   segments: [
-    { type: 'DEPOSIT', description: 'Deposit 0.5 ETH into Aave v3', status: 'done', protocol: 'Aave', txHash: '0xdemo1' },
+    { type: 'DEPOSIT', description: 'Deposit 0.5 ETH into Aave v3', status: 'done', protocol: 'Aave', txHash: '0xdemo1', amount: '0.5', from: 'ETH' },
   ],
   watchers: [
     {
@@ -157,8 +157,14 @@ export const useSigilStore = create<SigilState>((set, get) => ({
   }),
 
   addIntent: (intent) => set((state) => {
-    // Deduplicate — don't add if already tracked
-    if (state.activeIntents.some((a) => a.id === intent.id)) return state;
+    const exists = state.activeIntents.some((a) => a.id === intent.id);
+    if (exists) {
+      return {
+        activeIntents: state.activeIntents.map((i) =>
+          i.id === intent.id ? { ...i, status: intent.status, segments: intent.segments, watchers: intent.watchers } : i
+        ),
+      };
+    }
     return { activeIntents: [intent, ...state.activeIntents] };
   }),
 
@@ -168,14 +174,22 @@ export const useSigilStore = create<SigilState>((set, get) => ({
     ),
   })),
 
-  updateWatcherPrice: (watcherId, price) => set((state) => ({
-    activeIntents: state.activeIntents.map((intent) => ({
-      ...intent,
-      watchers: intent.watchers.map((w) =>
-        w.id === watcherId ? { ...w, currentPrice: price } : w
-      ),
-    })),
-  })),
+  updateWatcherPrice: (watcherId, price) => set((state) => {
+    let changed = false;
+    const nextIntents = state.activeIntents.map((intent) => {
+      let watcherChanged = false;
+      const nextWatchers = intent.watchers.map((w) => {
+        if (w.id === watcherId && w.currentPrice !== price) {
+          watcherChanged = true;
+          changed = true;
+          return { ...w, currentPrice: price };
+        }
+        return w;
+      });
+      return watcherChanged ? { ...intent, watchers: nextWatchers } : intent;
+    });
+    return changed ? { activeIntents: nextIntents } : state;
+  }),
 
   triggerWatcher: (watcherId) => set((state) => ({
     activeIntents: state.activeIntents.map((intent) => ({

@@ -55,13 +55,15 @@ export function SigilCard({ intent, onCancelWatcher }: SigilCardProps) {
               {activeWatchers.length} active watcher{activeWatchers.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="flex-shrink-0 p-1.5 rounded-lg text-text-tertiary hover:text-text-secondary hover:bg-sigil-hover transition-all"
-            aria-label={expanded ? 'Collapse' : 'Expand'}
-          >
-            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
+          {intent.watchers.length > 0 && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="flex-shrink-0 p-1.5 rounded-lg text-text-tertiary hover:text-text-secondary hover:bg-sigil-hover transition-all"
+              aria-label={expanded ? 'Collapse' : 'Expand'}
+            >
+              {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+          )}
         </div>
 
         {/* Segment pills */}

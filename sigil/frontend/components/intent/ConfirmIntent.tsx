@@ -95,26 +95,19 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
     hash: txHash,
   });
 
-  useEffect(() => {
-    if (isSuccess && txHash) {
-      setStep('done');
-      finalize();
-    }
-  }, [isSuccess, txHash]);
-
-  const finalize = useCallback(() => {
+  const finalize = useCallback((hash?: `0x${string}`) => {
     const now = Date.now();
     const newIntent: ActiveIntent = {
-      id: txHash ?? `local-${now}`,
+      id: hash ?? `local-${now}`,
       summary: decomposed.summary,
       status: 'ACTIVE',
       segments: decomposed.immediateSegments.map((s) => ({
         ...s,
         status: 'done' as const,
-        txHash: txHash,
+        txHash: hash,
       })),
       watchers: decomposed.watchers.map((w, i) => ({
-        id: `${txHash}-w${i}`,
+        id: hash ? `${hash}-w${i}` : `local-${now}-w${i}`,
         watcherType: w.watcherType,
         status: 'ACTIVE' as const,
         condition: w.condition,
@@ -125,12 +118,19 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
         intentSummary: decomposed.summary,
       })),
       createdAt: now,
-      txHash,
+      txHash: hash,
     };
     addIntent(newIntent);
     setIntentStep('done');
     setTimeout(onSuccess, 1500);
-  }, [decomposed, txHash, addIntent, setIntentStep, onSuccess]);
+  }, [decomposed, addIntent, setIntentStep, onSuccess]);
+
+  useEffect(() => {
+    if (isSuccess && txHash) {
+      setStep('done');
+      finalize(txHash);
+    }
+  }, [isSuccess, txHash, finalize]);
 
   const handleSubmit = useCallback(async () => {
     setErrorMsg(null);
@@ -229,7 +229,7 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
               s.callData,
               s.value,
               s.minGasLimit
-            ])
+            ] as [number, `0x${string}`, `0x${string}`, bigint, bigint])
           ]
         );
 

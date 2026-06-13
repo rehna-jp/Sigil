@@ -86,7 +86,7 @@ export function DecompositionView({ decomposed, onConfirm, onReset, isConfirming
             <>Processing…</>
           ) : (
             <>
-              Confirm &amp; Cast Sigil
+              Confirm & Cast Sigil
               <ChevronRight size={16} />
             </>
           )}

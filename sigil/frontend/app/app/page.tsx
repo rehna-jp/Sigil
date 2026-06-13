@@ -11,12 +11,19 @@ import { useIntents } from '../../hooks/useIntents';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { WSEvent } from '../../components/providers/WebSocketProvider';
 import { PulsingDot } from '../../components/ui/PulsingDot';
+import { useEthPrice } from '../../hooks/useEthPrice';
+import { useWatchers } from '../../hooks/useWatchers';
 
 export default function DashboardPage() {
   const { isConnected } = useAccount();
   const { activeIntents, triggerFeed, handleWSEvent, loadDemoState } = useSigilStore();
   const { isLoading } = useIntents();
   const { isConnected: wsConnected, isSimulating } = useWebSocket();
+
+  // Set browser page title
+  useEffect(() => {
+    document.title = 'Dashboard | Sigil';
+  }, []);
 
   // Pre-load demo state on first render if no on-chain intents
   useEffect(() => {
@@ -35,10 +42,44 @@ export default function DashboardPage() {
     handler,
   );
 
+  // Get active watcher IDs to trigger the query and store price updates
+  const activeWatcherIds = activeIntents
+    .flatMap((i) => i.watchers)
+    .filter((w) => w.status === 'ACTIVE' && w.id.startsWith('0x'))
+    .map((w) => w.id as `0x${string}`);
+
+  useWatchers(activeWatcherIds);
+  const ethPrice = useEthPrice();
+
   // Compute stats
   const totalWatchers = activeIntents.reduce((sum, i) => sum + i.watchers.filter((w) => w.status === 'ACTIVE').length, 0);
   const triggersFired = triggerFeed.length;
   const activeCount = activeIntents.filter((i) => ['ACTIVE', 'EXECUTING', 'PENDING'].includes(i.status)).length;
+
+  // Calculate TVL
+  const tvl = activeIntents
+    .filter((i) => ['ACTIVE', 'EXECUTING', 'PENDING'].includes(i.status))
+    .reduce((sum, intent) => {
+      let intentVal = 0;
+      intent.segments.forEach((seg) => {
+        if (seg.type === 'DEPOSIT' || seg.type === 'SWAP') {
+          const amt = parseFloat(seg.amount || '0');
+          if (!isNaN(amt)) {
+            const isUSDC = seg.from?.toUpperCase() === 'USDC' || seg.to?.toUpperCase() === 'USDC';
+            const val = isUSDC ? amt : amt * ethPrice;
+            if (val > intentVal) {
+              intentVal = val;
+            }
+          }
+        }
+      });
+      return sum + intentVal;
+    }, 0);
+
+  const formattedTVL = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(tvl);
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -65,7 +106,7 @@ export default function DashboardPage() {
         activeSigils={activeCount}
         liveWatchers={totalWatchers}
         triggersFired={triggersFired}
-        protectedTVL="$0.00"
+        protectedTVL={formattedTVL}
       />
 
       {/* Main grid */}

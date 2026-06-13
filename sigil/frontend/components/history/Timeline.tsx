@@ -38,12 +38,13 @@ export function Timeline({ events }: TimelineProps) {
 
       <div className="space-y-1">
         {events.map((event) => {
-          const meta = EVENT_META['trigger:fired'];
+          const meta = EVENT_META[event.eventType] ?? EVENT_META['trigger:fired'];
+          const IconComponent = meta.icon;
           return (
             <div key={event.id} className="relative flex items-start gap-4 pl-10 py-4">
               {/* Dot */}
               <div className={`absolute left-0 w-[30px] h-[30px] rounded-full border flex items-center justify-center flex-shrink-0 ${meta.bg} ${meta.border}`}>
-                <Zap size={12} className={meta.color} />
+                <IconComponent size={12} className={meta.color} />
               </div>
 
               {/* Content */}
@@ -51,7 +52,7 @@ export function Timeline({ events }: TimelineProps) {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="text-sm font-medium text-text-primary">
-                      {event.watcherType} Trigger Fired
+                      {meta.label}
                     </p>
                     <p className="text-xs text-text-tertiary mt-0.5">{event.condition}</p>
                     {event.triggerPrice && event.threshold && (

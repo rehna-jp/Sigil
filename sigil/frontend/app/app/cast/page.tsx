@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PresetIntents } from '../../../components/intent/PresetIntents';
 import { IntentInput } from '../../../components/intent/IntentInput';
 import { DecompositionView } from '../../../components/intent/DecompositionView';
@@ -36,6 +36,11 @@ function StepIndicator({ current }: { current: number }) {
 }
 
 export default function CastPage() {
+  // Set browser page title
+  useEffect(() => {
+    document.title = 'Cast Sigil | Sigil';
+  }, []);
+
   const { intentText, intentStep, decomposed, intentError, setIntentText, setIntentStep, resetIntent } = useSigilStore();
   const { decompose, isLoading } = useDecompose();
   const [stepIndex, setStepIndex] = useState(0);
