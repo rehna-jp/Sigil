@@ -1,19 +1,203 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import '@rainbow-me/rainbowkit/styles.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:opsz,wght@8..144,400;8..144,700&family=DM+Sans:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
-
+/* ============================================================
+   CSS Variables — Sigil Design Tokens
+   ============================================================ */
 :root {
-  --font-sans: 'DM Sans', system-ui, sans-serif;
-  --font-display: 'Instrument Serif', serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* Backgrounds */
+  --sigil-abyss:     #08080F;
+  --sigil-primary:   #0D0D1A;
+  --sigil-secondary: #141428;
+  --sigil-tertiary:  #1C1C36;
+  --sigil-hover:     #242445;
+
+  /* Emerald */
+  --emerald-900: #064E3B;
+  --emerald-500: #10B981;
+  --emerald-400: #34D399;
+  --emerald-300: #6EE7B7;
+  --emerald-glow: rgba(16, 185, 129, 0.15);
+
+  /* Amethyst */
+  --amethyst-900: #3B1F6E;
+  --amethyst-700: #5B3A9E;
+  --amethyst-500: #7C5CBF;
+  --amethyst-400: #9F7AEA;
+  --amethyst-300: #C4B5FD;
+  --amethyst-glow: rgba(124, 92, 191, 0.15);
+
+  /* Sapphire */
+  --sapphire-500: #3B82F6;
+  --sapphire-400: #60A5FA;
+  --sapphire-300: #93C5FD;
+
+  /* Ruby */
+  --ruby-500: #EF4444;
+  --ruby-400: #F87171;
+  --ruby-glow: rgba(239, 68, 68, 0.15);
+
+  /* Amber */
+  --amber-500: #F59E0B;
+  --amber-400: #FBBF24;
+
+  /* Text */
+  --text-primary:   #E8E6F0;
+  --text-secondary: #9896A8;
+  --text-tertiary:  #5C5A6E;
+
+  /* Borders */
+  --border-subtle:  rgba(232, 230, 240, 0.06);
+  --border-default: rgba(232, 230, 240, 0.10);
+  --border-strong:  rgba(232, 230, 240, 0.18);
+}
+
+/* ============================================================
+   Global Resets
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 html, body, #__next {
   height: 100%;
+  min-height: 100vh;
 }
 
 body {
-  font-family: var(--font-sans);
+  background-color: var(--sigil-abyss);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   Typography
+   ============================================================ */
+.font-display { font-family: 'Instrument Serif', serif; }
+.font-sans    { font-family: 'DM Sans', sans-serif; }
+.font-mono    { font-family: 'JetBrains Mono', monospace; }
+
+/* ============================================================
+   Keyframes
+   ============================================================ */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(1.15); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glowBorder {
+  0%, 100% { border-color: rgba(124, 92, 191, 0.2); }
+  50%       { border-color: rgba(124, 92, 191, 0.5); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes ruby-flash {
+  0%, 100% {
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.2), inset 0 1px 0 rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 64px rgba(239, 68, 68, 0.7), inset 0 1px 0 rgba(239, 68, 68, 0.4);
+    border-color: rgba(239, 68, 68, 0.9);
+  }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ============================================================
+   Glow Utilities
+   ============================================================ */
+@layer utilities {
+  .glow-emerald {
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.2),
+                inset 0 1px 0 rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.3) !important;
+  }
+
+  .glow-amethyst {
+    box-shadow: 0 0 24px rgba(124, 92, 191, 0.2),
+                inset 0 1px 0 rgba(124, 92, 191, 0.15);
+    border-color: rgba(124, 92, 191, 0.3) !important;
+  }
+
+  .glow-ruby {
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.2),
+                inset 0 1px 0 rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3) !important;
+  }
+
+  .glow-sapphire {
+    box-shadow: 0 0 24px rgba(59, 130, 246, 0.2),
+                inset 0 1px 0 rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3) !important;
+  }
+
+  .animate-pulse-dot  { animation: pulse-dot 2s ease-in-out infinite; }
+  .animate-fade-up    { animation: fadeUp 0.3s ease-out forwards; }
+  .animate-glow-border { animation: glowBorder 2s ease-in-out infinite; }
+  .animate-spin-slow  { animation: spin-slow 10s linear infinite; }
+  .animate-ruby-flash { animation: ruby-flash 0.6s ease-in-out infinite; }
+
+  /* Gradient text */
+  .gradient-amethyst-emerald {
+    background: linear-gradient(135deg, #9F7AEA 0%, #10B981 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-amethyst {
+    background: linear-gradient(135deg, #5B3A9E 0%, #7C5CBF 100%);
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    background: linear-gradient(90deg,
+      rgba(28, 28, 54, 0.8) 25%,
+      rgba(36, 36, 69, 0.8) 50%,
+      rgba(28, 28, 54, 0.8) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Scrollbar */
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(124, 92, 191, 0.3);
+    border-radius: 2px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(124, 92, 191, 0.5);
+  }
+}
+
+/* ============================================================
+   RainbowKit Overrides
+   ============================================================ */
+[data-rk] .iekbcc0 {
+  font-family: 'DM Sans', sans-serif !important;
 }

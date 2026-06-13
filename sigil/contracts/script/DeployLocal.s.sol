@@ -110,6 +110,6 @@ contract DeployLocal is Script {
 
         console.log("\n=== LOCAL DEPLOYMENT COMPLETE ===");
         console.log("All contracts deployed and configured!");
-        console.log("Ready for local testing 🧪");
+        console.log(unicode"Ready for local testing 🧪");
     }
 }

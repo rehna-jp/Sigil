@@ -33,17 +33,17 @@ contract VerifyDeployment is Script {
         address watcherReg = address(decomposer.watcherRegistry());
         bool routerAuthorized = decomposer.isAuthorizedRouter(routerAddr);
 
-        console.log("   WatcherRegistry set:", watcherReg == watcherRegistryAddr ? "✓" : "✗");
-        console.log("   IntentRouter authorized:", routerAuthorized ? "✓" : "✗");
+        console.log("   WatcherRegistry set:", watcherReg == watcherRegistryAddr ? unicode"✓" : unicode"✗");
+        console.log("   IntentRouter authorized:", routerAuthorized ? unicode"✓" : unicode"✗");
 
         // Verify WatcherRegistry
         console.log("\n2. Verifying WatcherRegistry...");
         WatcherRegistry registry = WatcherRegistry(watcherRegistryAddr);
         address intentDecomp = address(registry.intentDecomposer());
-        bool executorAuthorized = registry.isAuthorizedExecutor(executorAddr);
+        bool executorAuthorized = registry.authorizedExecutors(executorAddr);
 
-        console.log("   IntentDecomposer set:", intentDecomp == decomposerAddr ? "✓" : "✗");
-        console.log("   TriggerExecutor authorized:", executorAuthorized ? "✓" : "✗");
+        console.log("   IntentDecomposer set:", intentDecomp == decomposerAddr ? unicode"✓" : unicode"✗");
+        console.log("   TriggerExecutor authorized:", executorAuthorized ? unicode"✓" : unicode"✗");
 
         // Verify IntentRouter
         console.log("\n3. Verifying IntentRouter...");
@@ -52,18 +52,18 @@ contract VerifyDeployment is Script {
         bool uniswapApproved = router.approvedProtocols(uniswapAdapterAddr);
         bool aaveApproved = router.approvedProtocols(aaveAdapterAddr);
 
-        console.log("   IntentDecomposer set:", routerDecomposer == decomposerAddr ? "✓" : "✗");
-        console.log("   UniswapV3Adapter approved:", uniswapApproved ? "✓" : "✗");
-        console.log("   AaveV3Adapter approved:", aaveApproved ? "✓" : "✗");
+        console.log("   IntentDecomposer set:", routerDecomposer == decomposerAddr ? unicode"✓" : unicode"✗");
+        console.log("   UniswapV3Adapter approved:", uniswapApproved ? unicode"✓" : unicode"✗");
+        console.log("   AaveV3Adapter approved:", aaveApproved ? unicode"✓" : unicode"✗");
 
         // Verify TriggerExecutor
         console.log("\n4. Verifying TriggerExecutor...");
-        TriggerExecutor executor = TriggerExecutor(executorAddr);
+        TriggerExecutor executor = TriggerExecutor(payable(executorAddr));
         address executorRegistry = address(executor.watcherRegistry());
         address executorDecomposer = address(executor.intentDecomposer());
 
-        console.log("   WatcherRegistry set:", executorRegistry == watcherRegistryAddr ? "✓" : "✗");
-        console.log("   IntentDecomposer set:", executorDecomposer == decomposerAddr ? "✓" : "✗");
+        console.log("   WatcherRegistry set:", executorRegistry == watcherRegistryAddr ? unicode"✓" : unicode"✗");
+        console.log("   IntentDecomposer set:", executorDecomposer == decomposerAddr ? unicode"✓" : unicode"✗");
 
         // Final status
         console.log("\n=== VERIFICATION COMPLETE ===");
@@ -79,10 +79,10 @@ contract VerifyDeployment is Script {
             executorDecomposer == decomposerAddr;
 
         if (allChecks) {
-            console.log("\n✅ All verifications passed!");
-            console.log("🔗 Sigil Protocol is correctly configured!");
+            console.log(unicode"\n✅ All verifications passed!");
+            console.log(unicode"🔗 Sigil Protocol is correctly configured!");
         } else {
-            console.log("\n❌ Some verifications failed!");
+            console.log(unicode"\n❌ Some verifications failed!");
             console.log("Please check the configuration above.");
         }
     }

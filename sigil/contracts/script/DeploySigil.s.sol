@@ -18,7 +18,7 @@ import "../src/interfaces/IERC8004.sol";
 contract DeploySigil is Script {
     // Arbitrum Sepolia addresses
     address constant UNISWAP_V3_ROUTER = 0x101F443B4d1b059569D643917553c771E1b9663E; // Arbitrum Sepolia SwapRouter
-    address constant AAVE_V3_POOL = 0x6Cad12b3618A6E8638E19049E7fF94802904c1Ed; // Arbitrum Sepolia Pool
+    address constant AAVE_V3_POOL = 0x6cAd12b3618A6e8638E19049E7Ff94802904C1ed; // Arbitrum Sepolia Pool
 
     // Price feeds (Arbitrum Sepolia Chainlink)
     address constant ETH_USD_FEED = 0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165;
@@ -165,8 +165,8 @@ contract DeploySigil is Script {
         console.log("Price Feeds:");
         console.log("  ETH/USD:", ETH_USD_FEED);
         console.log("  USDC/USD:", USDC_USD_FEED);
-        console.log("\n🎉 Sigil Protocol successfully deployed!");
-        console.log("🔗 The Persistent Intent Loop is LIVE!");
+        console.log(unicode"\n🎉 Sigil Protocol successfully deployed!");
+        console.log(unicode"🔗 The Persistent Intent Loop is LIVE!");
 
         // Save deployment addresses to file
         _saveDeploymentAddresses();

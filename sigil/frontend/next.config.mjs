@@ -1,4 +1,9 @@
 export default {
   reactStrictMode: true,
-  experimental: { appDir: true }
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  }
 };

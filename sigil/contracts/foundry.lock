@@ -1,4 +1,13 @@
 {
+  "lib/chainlink": {
+    "rev": "065ef85b5fa52bb4583ebad9e51c20a977b64e7a"
+  },
+  "lib/forge-std": {
+    "rev": "dcb0d52bc4399d37a6545848e3b8f9d03c77b98d"
+  },
+  "lib/openzeppelin-contracts": {
+    "rev": "932fddf69a699a9a80fd2396fd1a2ab91cdda123"
+  },
   "lib\\chainlink": {
     "tag": {
       "name": "v2.9.0",
