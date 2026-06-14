@@ -29,8 +29,10 @@ export function useEthPrice() {
     ? Number((priceData[0].result as readonly [bigint, bigint, bigint, bigint, bigint])[1]) / 1e8
     : null;
 
+  const [hasFailedFetch, setHasFailedFetch] = useState(false);
+
   useEffect(() => {
-    if (onChainPrice === null) {
+    if (onChainPrice === null && !hasFailedFetch) {
       const fetchPrice = async () => {
         try {
           const res = await fetch('https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD');
@@ -39,14 +41,15 @@ export function useEthPrice() {
             setRestEthPrice(data.USD);
           }
         } catch (err) {
-          console.error('Failed to fetch fallback price', err);
+          console.warn('Failed to fetch fallback price from Cryptocompare, using default/mock price.');
+          setHasFailedFetch(true);
         }
       };
       fetchPrice();
       const interval = setInterval(fetchPrice, 30_000);
       return () => clearInterval(interval);
     }
-  }, [onChainPrice]);
+  }, [onChainPrice, hasFailedFetch]);
 
   return onChainPrice ?? restEthPrice ?? 3750;
 }

@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { encodeAbiParameters, parseAbiParameters, parseEther, parseUnits } from 'viem';
+import { encodeAbiParameters, parseAbiParameters, parseEther, parseUnits, decodeEventLog } from 'viem';
 import { CheckCircle2, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
 import { CONTRACTS, getArbiscanTx, RPC_URL } from '../../lib/constants';
 import { IntentDecomposerABI } from '../../lib/contracts';
@@ -91,14 +91,14 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
   const { writeContractAsync } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
 
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+  const { data: receipt, isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash: txHash,
   });
 
-  const finalize = useCallback((hash?: `0x${string}`) => {
+  const finalize = useCallback((hash?: `0x${string}`, onChainIntentId?: string) => {
     const now = Date.now();
     const newIntent: ActiveIntent = {
-      id: hash ?? `local-${now}`,
+      id: onChainIntentId ?? hash ?? `local-${now}`,
       summary: decomposed.summary,
       status: 'ACTIVE',
       segments: decomposed.immediateSegments.map((s) => ({
@@ -128,9 +128,29 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
   useEffect(() => {
     if (isSuccess && txHash) {
       setStep('done');
-      finalize(txHash);
+
+      let intentId: string | undefined;
+      if (receipt && receipt.logs) {
+        for (const log of receipt.logs) {
+          try {
+            const decoded = decodeEventLog({
+              abi: IntentDecomposerABI,
+              data: log.data,
+              topics: log.topics,
+            });
+            if (decoded.eventName === 'IntentDecomposed') {
+              intentId = (decoded.args as any).intentId;
+              break;
+            }
+          } catch {
+            // Ignore other events
+          }
+        }
+      }
+
+      finalize(txHash, intentId);
     }
-  }, [isSuccess, txHash, finalize]);
+  }, [isSuccess, txHash, receipt, finalize]);
 
   const handleSubmit = useCallback(async () => {
     setErrorMsg(null);
@@ -246,6 +266,7 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
         abi: IntentDecomposerABI,
         functionName: 'submitDecomposition',
         args: [address, segments, watchers, expiresAt],
+        gasPrice: parseUnits('0.1', 9), // Force legacy gasPrice to prevent EIP-1559 maxFeePerGas under block base fee issues on Arbitrum Sepolia
       });
 
       setTxHash(hash);

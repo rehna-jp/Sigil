@@ -246,16 +246,8 @@ export class KeeperService {
    */
   private async getActiveWatcherIds(): Promise<string[]> {
     try {
-      // Get watcher count
-      const watcherCount = await this.contracts.watcherRegistry.getActiveWatcherCount();
-
-      if (watcherCount === 0n) {
-        return [];
-      }
-
-      // Get active watcher IDs
-      const ids = await this.contracts.watcherRegistry.getActiveWatcherIds(0, Number(watcherCount));
-
+      // Get active watcher IDs directly
+      const ids = await this.contracts.watcherRegistry.getActiveWatcherIds();
       return ids;
     } catch (error) {
       console.error('Failed to get active watcher IDs:', error);
