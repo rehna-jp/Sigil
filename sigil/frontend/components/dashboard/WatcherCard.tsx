@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Clock, TrendingDown, ExternalLink } from 'lucide-react';
 import { PulsingDot } from '../ui/PulsingDot';
 import { ActiveWatcher } from '../../stores/sigil';
-import { getArbiscanAddress } from '../../lib/constants';
+import { getArbiscanAddress, CONTRACTS } from '../../lib/constants';
 
 interface WatcherCardProps {
   watcher: ActiveWatcher;
@@ -138,10 +138,11 @@ export function WatcherCard({ watcher, onCancel }: WatcherCardProps) {
         </div>
         <div className="flex items-center gap-2">
           <a
-            href={getArbiscanAddress(watcher.id)}
+            href={`${getArbiscanAddress(CONTRACTS.arbitrumSepolia.WatcherRegistry)}#readContract`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[11px] text-text-tertiary hover:text-amethyst-400 transition-colors flex items-center gap-1"
+            title={`Watcher ID: ${watcher.id}`}
           >
             <ExternalLink size={10} />
             View

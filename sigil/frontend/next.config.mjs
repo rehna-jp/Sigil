@@ -3,8 +3,12 @@ export default {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
+  turbopack: {
+    resolveAlias: {
+      '@react-native-async-storage/async-storage': { browser: './src/lib/empty.js' },
+      'pino-pretty': { browser: './src/lib/empty.js' },
+      'fsevents': { browser: './src/lib/empty.js' },
+    },
   },
   async rewrites() {
     return [
@@ -14,13 +18,4 @@ export default {
       },
     ];
   },
-  webpack: (config) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      '@react-native-async-storage/async-storage': false,
-      'pino-pretty': false,
-      'fsevents': false,
-    };
-    return config;
-  }
 };

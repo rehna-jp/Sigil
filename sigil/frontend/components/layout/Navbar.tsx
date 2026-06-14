@@ -1,7 +1,7 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useChainId } from 'wagmi';
+import { useChainId, useAccount } from 'wagmi';
 import { arbitrumSepolia } from 'wagmi/chains';
 import { SigilLogo } from './SigilLogo';
 import { useWSContext } from '../providers/WebSocketProvider';
@@ -9,8 +9,10 @@ import Link from 'next/link';
 
 export function Navbar() {
   const chainId = useChainId();
-  const { isConnected, isSimulating } = useWSContext();
-  const isWrongNetwork = chainId !== arbitrumSepolia.id;
+  const { isConnected } = useAccount();
+  const { isConnected: wsConnected, isSimulating } = useWSContext();
+  const isOnChain = isConnected && chainId === arbitrumSepolia.id;
+  const isWrongNetwork = isConnected && chainId !== arbitrumSepolia.id;
 
   return (
     <nav className="h-14 flex items-center justify-between px-6 border-b border-white/[0.06] bg-sigil-primary/80 backdrop-blur-xl sticky top-0 z-50">
@@ -28,15 +30,17 @@ export function Navbar() {
         <div className="hidden sm:flex items-center gap-1.5 text-xs text-text-tertiary">
           <span
             className={`w-1.5 h-1.5 rounded-full ${
-              isConnected
+              isOnChain
+                ? 'bg-emerald-500 animate-pulse-dot'
+                : wsConnected
                 ? 'bg-emerald-500 animate-pulse-dot'
                 : isSimulating
-                ? 'bg-amber-400 animate-pulse-dot'
+                ? 'bg-amethyst-500 animate-pulse-dot'
                 : 'bg-text-tertiary'
             }`}
           />
           <span>
-            {isConnected ? 'Live' : isSimulating ? 'Simulating' : 'Offline'}
+            {isOnChain ? 'On-chain' : wsConnected ? 'Live' : isSimulating ? 'Demo' : 'Offline'}
           </span>
         </div>
 

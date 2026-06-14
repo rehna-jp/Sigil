@@ -104,6 +104,7 @@ interface SigilState {
 
   // Simulation — pre-load demo state for judges
   loadDemoState: () => void;
+  clearDemoState: () => void;
 }
 
 // ============================================================
@@ -292,4 +293,11 @@ export const useSigilStore = create<SigilState>((set, get) => ({
     activeIntents: [DEMO_INTENT],
     triggerFeed: [],
   }),
+
+  clearDemoState: () => set((state) => ({
+    // Remove only the demo intent — keep any real on-chain intents already loaded
+    activeIntents: state.activeIntents.filter((i) => !i.id.startsWith('demo-')),
+    // Clear simulated trigger events (they have no txHash and were generated locally)
+    triggerFeed: state.triggerFeed.filter((e) => !!e.txHash),
+  })),
 }));

@@ -46,7 +46,7 @@ export default function LandingPage() {
         <p className="text-text-secondary text-lg md:text-xl max-w-xl mb-10 leading-relaxed font-sans">
           Inscribe your financial intent once.{' '}
           <span className="text-text-primary">It watches, reacts, and protects</span>{' '}
-          — autonomously.
+           autonomously.
         </p>
 
         {/* CTA buttons */}

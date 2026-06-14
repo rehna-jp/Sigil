@@ -15,8 +15,9 @@ import { useEthPrice } from '../../hooks/useEthPrice';
 import { useWatchers } from '../../hooks/useWatchers';
 
 export default function DashboardPage() {
-  const { isConnected } = useAccount();
-  const { activeIntents, triggerFeed, handleWSEvent, loadDemoState } = useSigilStore();
+  const { isConnected, chain } = useAccount();
+  const isOnChain = isConnected && chain?.id === 421614;
+  const { activeIntents, triggerFeed, handleWSEvent, loadDemoState, clearDemoState } = useSigilStore();
   const { isLoading } = useIntents();
   const { isConnected: wsConnected, isSimulating } = useWebSocket();
 
@@ -25,7 +26,14 @@ export default function DashboardPage() {
     document.title = 'Dashboard | Sigil';
   }, []);
 
-  // Pre-load demo state on first render if no on-chain intents
+  // Clear demo data immediately when wallet connects to the right chain
+  useEffect(() => {
+    if (isOnChain) {
+      clearDemoState();
+    }
+  }, [isOnChain, clearDemoState]);
+
+  // Pre-load demo state on first render if no wallet connected
   useEffect(() => {
     if (!isConnected && activeIntents.length === 0) {
       loadDemoState();
@@ -88,9 +96,20 @@ export default function DashboardPage() {
         <div>
           <h1 className="font-display text-2xl text-text-primary">Dashboard</h1>
           <div className="flex items-center gap-2 mt-1">
-            <PulsingDot color={wsConnected || isSimulating ? 'emerald' : 'amber'} size="sm" />
+            <PulsingDot
+              color={isOnChain ? 'emerald' : wsConnected ? 'emerald' : isSimulating ? 'amethyst' : 'amber'}
+              size="sm"
+            />
             <p className="text-xs text-text-tertiary">
-              {wsConnected ? 'Live feed connected' : isSimulating ? 'Simulation mode — live feed' : 'Connecting…'}
+              {isOnChain
+                ? wsConnected
+                  ? 'On-chain · Live feed connected'
+                  : 'On-chain mode · Arbitrum Sepolia'
+                : wsConnected
+                ? 'Live feed connected'
+                : isSimulating
+                ? 'Demo mode — connect wallet to go live'
+                : 'Connecting…'}
             </p>
           </div>
         </div>
