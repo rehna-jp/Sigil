@@ -44,7 +44,11 @@ export class IntentService {
 
       // Execute segments immediately after registration
       console.log(`Executing ${segments.length} segments for intent ${intentId}`);
-      await this.executeSegments(intentId, segments);
+      try {
+        await this.executeSegments(intentId, segments);
+      } catch (execError: any) {
+        console.error('⚠️ Execution failed but intent is registered:', execError?.reason || execError?.message);
+      }
 
       return {
         intentId,
@@ -165,9 +169,15 @@ export class IntentService {
       console.log(`Segments executed: ${tx.hash}`);
       await tx.wait();
       return tx.hash;
-    } catch (error) {
-      console.error('Failed to execute segments:', error);
+    
+      } catch (error: any) {
+      console.error('Failed to execute segments:', error?.message);
+      console.error('Error data:', error?.data);
+      console.error('Error reason:', error?.reason);
+      console.error('Segments passed:', JSON.stringify(segments, (_, v) =>
+        typeof v === 'bigint' ? v.toString() : v, 2));
       throw error;
+    
     }
   }
 

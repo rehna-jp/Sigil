@@ -93,7 +93,7 @@ export const IntentDecomposerABI = [
     inputs: [
       { name: 'intentId',      type: 'bytes32', indexed: true },
       { name: 'user',          type: 'address', indexed: true },
-      { name: 'submitter',     type: 'address', indexed: false },
+      { name: 'submitter',     type: 'address', indexed: true },
       { name: 'segmentCount',  type: 'uint256', indexed: false },
       { name: 'watcherCount',  type: 'uint256', indexed: false },
       { name: 'expiresAt',     type: 'uint256', indexed: false },
@@ -186,3 +186,64 @@ export const MockPriceFeedABI = [
     outputs: [],
   },
 ] as const;
+
+export const IntentRouterABI = [
+  {
+    name: 'executeSegments',
+    type: 'function',
+    stateMutability: 'payable',
+    inputs: [
+      { name: 'intentId', type: 'bytes32' },
+      {
+        name: 'segments',
+        type: 'tuple[]',
+        components: [
+          { name: 'segmentType',    type: 'uint8'   },
+          { name: 'targetProtocol', type: 'address' },
+          { name: 'callData',       type: 'bytes'   },
+          { name: 'value',          type: 'uint256' },
+          { name: 'minGasLimit',    type: 'uint256' },
+        ],
+      },
+    ],
+    outputs: [{ name: 'results', type: 'bool[]' }],
+  },
+] as const;
+
+export const ERC20ABI = [
+  {
+    name: 'balanceOf',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: 'balance', type: 'uint256' }],
+  },
+  {
+    name: 'allowance',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+    ],
+    outputs: [{ name: 'remaining', type: 'uint256' }],
+  },
+  {
+    name: 'approve',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'value', type: 'uint256' },
+    ],
+    outputs: [{ name: 'success', type: 'bool' }],
+  },
+  {
+    name: 'deposit',
+    type: 'function',
+    stateMutability: 'payable',
+    inputs: [],
+    outputs: [],
+  },
+] as const;
+

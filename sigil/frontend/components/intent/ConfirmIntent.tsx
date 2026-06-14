@@ -1,11 +1,11 @@
 'use client';
 
 import { useCallback, useState, useEffect } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useWriteContract, usePublicClient } from 'wagmi';
 import { encodeAbiParameters, parseAbiParameters, parseEther, parseUnits, decodeEventLog } from 'viem';
 import { CheckCircle2, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
 import { CONTRACTS, getArbiscanTx, RPC_URL } from '../../lib/constants';
-import { IntentDecomposerABI } from '../../lib/contracts';
+import { IntentDecomposerABI, IntentRouterABI, ERC20ABI } from '../../lib/contracts';
 import { DecomposedIntent, ActiveIntent, useSigilStore } from '../../stores/sigil';
 
 interface ConfirmIntentProps {
@@ -14,7 +14,15 @@ interface ConfirmIntentProps {
   onCancel: () => void;
 }
 
-type Step = 'idle' | 'submitting' | 'confirming' | 'done' | 'error';
+type Step =
+  | 'idle'
+  | 'checking'
+  | 'wrapping'
+  | 'approving'
+  | 'submitting'
+  | 'executing'
+  | 'done'
+  | 'error';
 
 // Map segment type string → uint8 enum value
 const SEG_TYPE: Record<string, number> = { SWAP: 0, DEPOSIT: 1, WITHDRAW: 2, HEDGE: 3, CUSTOM: 4 };
@@ -90,10 +98,7 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
 
   const { writeContractAsync } = useWriteContract();
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
-
-  const { data: receipt, isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash: txHash,
-  });
+  const publicClient = usePublicClient();
 
   const finalize = useCallback((hash?: `0x${string}`, onChainIntentId?: string) => {
     const now = Date.now();
@@ -125,40 +130,13 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
     setTimeout(onSuccess, 1500);
   }, [decomposed, addIntent, setIntentStep, onSuccess]);
 
-  useEffect(() => {
-    if (isSuccess && txHash) {
-      setStep('done');
-
-      let intentId: string | undefined;
-      if (receipt && receipt.logs) {
-        for (const log of receipt.logs) {
-          try {
-            const decoded = decodeEventLog({
-              abi: IntentDecomposerABI,
-              data: log.data,
-              topics: log.topics,
-            });
-            if (decoded.eventName === 'IntentDecomposed') {
-              intentId = (decoded.args as any).intentId;
-              break;
-            }
-          } catch {
-            // Ignore other events
-          }
-        }
-      }
-
-      finalize(txHash, intentId);
-    }
-  }, [isSuccess, txHash, receipt, finalize]);
-
   const handleSubmit = useCallback(async () => {
     setErrorMsg(null);
 
     // If wallet not connected or wrong chain — use simulation mode
     if (!isConnected || !address || chain?.id !== 421614) {
       setSimMode(true);
-      setStep('confirming');
+      setStep('submitting');
       await new Promise((r) => setTimeout(r, 2000));
       setStep('done');
       finalize();
@@ -166,7 +144,8 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
     }
 
     try {
-      setStep('submitting');
+      setStep('checking');
+      if (!publicClient) throw new Error('Web3 public client not available');
 
       const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60); // 30 days
 
@@ -261,16 +240,135 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
         };
       });
 
-      const hash = await writeContractAsync({
+      // 1. Resolve token requirements (WETH wrap checking)
+      const requiredAmounts: Record<string, bigint> = {};
+      const tokenSymbolMap: Record<string, string> = {};
+
+      decomposed.immediateSegments.forEach(s => {
+        if (s.type === 'SWAP' || s.type === 'DEPOSIT') {
+          const tokenIn = parseToken(s.from);
+          const amountIn = parseAmount(s.amount, s.from);
+          if (tokenIn && amountIn > 0n) {
+            const key = tokenIn.toLowerCase();
+            requiredAmounts[key] = (requiredAmounts[key] || 0n) + amountIn;
+            tokenSymbolMap[key] = s.from?.toUpperCase() || 'WETH';
+          }
+        }
+      });
+
+      for (const [tokenAddrStr, requiredAmount] of Object.entries(requiredAmounts)) {
+        if (requiredAmount === 0n) continue;
+        const tokenAddr = tokenAddrStr as `0x${string}`;
+        const symbol = tokenSymbolMap[tokenAddrStr] || 'WETH';
+
+        const balance = await publicClient.readContract({
+          address: tokenAddr,
+          abi: ERC20ABI,
+          functionName: 'balanceOf',
+          args: [address],
+        });
+
+        if (balance < requiredAmount) {
+          if (tokenAddr.toLowerCase() === WETH_ADDR.toLowerCase()) {
+            const wrapAmountNeeded = requiredAmount - balance;
+            const ethBalance = await publicClient.getBalance({ address });
+            const minEthRequired = wrapAmountNeeded + parseEther('0.005');
+            if (ethBalance < minEthRequired) {
+              throw new Error(
+                `Insufficient balance. You need at least ${Number(wrapAmountNeeded) / 1e18} more WETH to submit this intent. Your ETH balance (${Number(ethBalance) / 1e18} ETH) is also too low to wrap WETH and pay gas.`
+              );
+            }
+            
+            setStep('wrapping');
+            const wrapHash = await writeContractAsync({
+              address: WETH_ADDR,
+              abi: ERC20ABI,
+              functionName: 'deposit',
+              args: [],
+              value: wrapAmountNeeded,
+              gasPrice: parseUnits('0.1', 9),
+            });
+            await publicClient.waitForTransactionReceipt({ hash: wrapHash });
+          } else {
+            throw new Error(`Insufficient ${symbol} balance. Required: ${Number(requiredAmount) / (symbol === 'USDC' ? 1e6 : 1e18)}, Available: ${Number(balance) / (symbol === 'USDC' ? 1e6 : 1e18)}.`);
+          }
+        }
+      }
+
+      // 2. Check token approvals for adapters
+      for (const s of decomposed.immediateSegments) {
+        if (s.type === 'SWAP' || s.type === 'DEPOSIT') {
+          const encoded = encodeSegment(s);
+          const tokenIn = parseToken(s.from);
+          const amountIn = parseAmount(s.amount, s.from);
+          if (!tokenIn || amountIn === 0n) continue;
+
+          const allowance = await publicClient.readContract({
+            address: tokenIn,
+            abi: ERC20ABI,
+            functionName: 'allowance',
+            args: [address, encoded.targetProtocol],
+          });
+
+          if (allowance < amountIn) {
+            setStep('approving');
+            const approveHash = await writeContractAsync({
+              address: tokenIn,
+              abi: ERC20ABI,
+              functionName: 'approve',
+              args: [encoded.targetProtocol, amountIn],
+              gasPrice: parseUnits('0.1', 9),
+            });
+            await publicClient.waitForTransactionReceipt({ hash: approveHash });
+          }
+        }
+      }
+
+      // 3. Submit Decomposition to IntentDecomposer
+      setStep('submitting');
+      const submitHash = await writeContractAsync({
         address: CONTRACTS.arbitrumSepolia.IntentDecomposer,
         abi: IntentDecomposerABI,
         functionName: 'submitDecomposition',
         args: [address, segments, watchers, expiresAt],
-        gasPrice: parseUnits('0.1', 9), // Force legacy gasPrice to prevent EIP-1559 maxFeePerGas under block base fee issues on Arbitrum Sepolia
+        gasPrice: parseUnits('0.1', 9),
       });
 
-      setTxHash(hash);
-      setStep('confirming');
+      const submitReceipt = await publicClient.waitForTransactionReceipt({ hash: submitHash });
+      setTxHash(submitHash);
+
+      let intentId: string | undefined;
+      for (const log of submitReceipt.logs) {
+        try {
+          const decoded = decodeEventLog({
+            abi: IntentDecomposerABI,
+            data: log.data,
+            topics: log.topics,
+          });
+          if (decoded.eventName === 'IntentDecomposed') {
+            intentId = (decoded.args as any).intentId;
+            break;
+          }
+        } catch {}
+      }
+
+      if (!intentId) throw new Error('Failed to retrieve intent ID from transaction logs');
+
+      // 4. Execute segments immediate execution
+      if (segments.length > 0) {
+        setStep('executing');
+        const execHash = await writeContractAsync({
+          address: CONTRACTS.arbitrumSepolia.IntentRouter,
+          abi: IntentRouterABI,
+          functionName: 'executeSegments',
+          args: [intentId, segments],
+          gasPrice: parseUnits('0.1', 9),
+        });
+        await publicClient.waitForTransactionReceipt({ hash: execHash });
+      }
+
+      setStep('done');
+      finalize(submitHash, intentId);
     } catch (err) {
       console.error(err);
       let msg = err instanceof Error ? err.message : 'Transaction failed';
@@ -282,7 +380,7 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
       setErrorMsg(msg);
       setStep('error');
     }
-  }, [address, isConnected, chain, decomposed, writeContractAsync, finalize]);
+  }, [address, isConnected, chain, decomposed, writeContractAsync, publicClient, finalize]);
 
   if (step === 'done') {
     return (
@@ -309,6 +407,19 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
       </div>
     );
   }
+
+  const getStepText = (s: Step) => {
+    switch (s) {
+      case 'checking': return 'Checking Balances…';
+      case 'wrapping': return 'Wrapping ETH…';
+      case 'approving': return 'Approving Tokens…';
+      case 'submitting': return 'Submitting Sigil…';
+      case 'executing': return 'Executing Segments…';
+      default: return 'Broadcast';
+    }
+  };
+
+  const isPending = step !== 'idle' && step !== 'error' && step !== 'done';
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -342,11 +453,45 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
         </div>
       </div>
 
+      {/* Step progress list */}
+      {isPending && (
+        <div className="p-4 rounded-xl border border-white/[0.07] bg-sigil-secondary/50 space-y-3 animate-fade-up">
+          <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Transaction Status</h4>
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-2 text-xs">
+              <div className={`w-2 h-2 rounded-full ${step === 'checking' ? 'bg-amethyst-500 animate-pulse' : 'bg-emerald-500'}`} />
+              <span className={step === 'checking' ? 'text-text-primary font-medium' : 'text-text-tertiary'}>Checking balance & allowances</span>
+            </div>
+            {/* Show wrapping/approving only if active or completed */}
+            {(step === 'wrapping' || step === 'approving' || step === 'submitting' || step === 'executing') && (
+              <div className="flex items-center gap-2 text-xs">
+                <div className={`w-2 h-2 rounded-full ${step === 'wrapping' ? 'bg-amethyst-500 animate-pulse' : 'bg-emerald-500'}`} />
+                <span className={step === 'wrapping' ? 'text-text-primary font-medium' : 'text-text-tertiary'}>Wrapping ETH to WETH</span>
+              </div>
+            )}
+            {(step === 'approving' || step === 'submitting' || step === 'executing') && (
+              <div className="flex items-center gap-2 text-xs">
+                <div className={`w-2 h-2 rounded-full ${step === 'approving' ? 'bg-amethyst-500 animate-pulse' : 'bg-emerald-500'}`} />
+                <span className={step === 'approving' ? 'text-text-primary font-medium' : 'text-text-tertiary'}>Approving token spending</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-xs">
+              <div className={`w-2 h-2 rounded-full ${step === 'submitting' ? 'bg-amethyst-500 animate-pulse' : step === 'executing' ? 'bg-emerald-500' : 'bg-white/10'}`} />
+              <span className={step === 'submitting' ? 'text-text-primary font-medium' : step === 'executing' ? 'text-text-tertiary' : 'text-text-tertiary'}>Registering Sigil on-chain</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className={`w-2 h-2 rounded-full ${step === 'executing' ? 'bg-amethyst-500 animate-pulse' : 'bg-white/10'}`} />
+              <span className={step === 'executing' ? 'text-text-primary font-medium' : 'text-text-tertiary'}>Executing immediate segments</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Error */}
       {step === 'error' && errorMsg && (
         <div className="flex items-start gap-2 p-3 rounded-xl border border-ruby-500/20 bg-ruby-900/20">
           <AlertCircle size={14} className="text-ruby-400 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-ruby-400">{errorMsg}</p>
+          <p className="text-xs text-ruby-400 whitespace-pre-wrap">{errorMsg}</p>
         </div>
       )}
 
@@ -354,7 +499,7 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
       <div className="flex gap-3">
         <button
           onClick={onCancel}
-          disabled={step === 'submitting' || step === 'confirming'}
+          disabled={isPending}
           className="flex-1 py-3 rounded-xl text-sm font-medium border border-white/10 text-text-secondary hover:border-white/20 hover:text-text-primary transition-all disabled:opacity-40"
         >
           Cancel
@@ -362,16 +507,16 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
         <button
           id="confirm-broadcast-btn"
           onClick={handleSubmit}
-          disabled={step === 'submitting' || step === 'confirming'}
+          disabled={isPending}
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white
             bg-gradient-to-r from-amethyst-700 to-amethyst-500
             hover:from-amethyst-600 hover:to-amethyst-400
             disabled:opacity-50 disabled:cursor-not-allowed
             transition-all duration-200 shadow-glow-amethyst"
         >
-          {step === 'submitting' || step === 'confirming' ? (
+          {isPending ? (
             <><Loader2 size={14} className="animate-spin" />
-              {step === 'submitting' ? 'Submitting…' : 'Confirming…'}
+              {getStepText(step)}
             </>
           ) : (
             'Broadcast'

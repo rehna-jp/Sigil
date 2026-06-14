@@ -12,7 +12,7 @@ export const CONTRACTS = {
     WatcherRegistry:   (process.env.NEXT_PUBLIC_WATCHER_REGISTRY   ?? '0xB3073A12EBD1ffE05B9Bd530A50625779AB8E93d') as `0x${string}`,
     TriggerExecutor:   (process.env.NEXT_PUBLIC_TRIGGER_EXECUTOR   ?? '0xE80dd053081b941FBfF60eB8b105bBF4f971327a') as `0x${string}`,
     IntentRouter:      (process.env.NEXT_PUBLIC_INTENT_ROUTER      ?? '0x2D514AB7E8C2F05FA82Bb4885de00Da933501022') as `0x${string}`,
-    MockPriceFeed:     (process.env.NEXT_PUBLIC_MOCK_PRICE_FEED    ?? '0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165') as `0x${string}`,
+    MockPriceFeed:     (process.env.NEXT_PUBLIC_MOCK_PRICE_FEED    ?? '0xFBdcBBfCa2dC73348F7Cf9b1a572bbe5f4d0cCE3') as `0x${string}`,
     UniswapV3Adapter:  '0x315bbDFE5Ea6F2083c554612D2F339a47afC0605' as `0x${string}`,
     AaveV3Adapter:     '0x64D41E4D849b83aA1870f30B148a94A2F01a300A' as `0x${string}`,
     WETH:              '0x980B62Da83eFf3D4576C647993b0c1D7faf17c73' as `0x${string}`,

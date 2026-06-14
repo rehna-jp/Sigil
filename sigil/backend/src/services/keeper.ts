@@ -299,7 +299,10 @@ export class KeeperService {
       blockNumber,
       gasPrice: ethers.formatUnits(gasPrice, 'gwei') + ' gwei',
       activeWatchers: activeWatchers.length,
-      config: this.config
+      config: {
+        ...this.config,
+        maxGasPrice: this.config.maxGasPrice.toString()
+      }
     };
   }
 }
