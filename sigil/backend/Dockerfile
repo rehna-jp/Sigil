@@ -10,7 +10,7 @@ COPY package*.json ./
 COPY tsconfig.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY src ./src
@@ -25,14 +25,13 @@ WORKDIR /app
 
 # Install production dependencies only
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 
-# Note: Contract ABIs need to be available at ../contracts/out
-# This is handled by mounting or copying during build
-# For Cloud Run, ensure contracts/out is in the build context
+# Copy contract ABIs (needed by the backend)
+COPY contracts ./contracts
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \

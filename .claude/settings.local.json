@@ -5,7 +5,10 @@
       "Bash(where:*)",
       "Bash(forge build:*)",
       "Bash(forge test:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(docker build:*)",
+      "Bash(bash:*)",
+      "Bash(git stash:*)"
     ]
   }
 }

@@ -66,7 +66,6 @@ gcloud run deploy sigil-backend \
   --region us-central1 \
   --platform managed \
   --allow-unauthenticated \
-  --set-env-vars PORT=8080 \
   --update-secrets GROQ_API_KEY=GROQ_API_KEY:latest,ARBITRUM_SEPOLIA_RPC_URL=ARBITRUM_SEPOLIA_RPC_URL:latest \
   --memory 512Mi \
   --cpu 1 \

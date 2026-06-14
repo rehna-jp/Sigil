@@ -7,7 +7,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Path to compiled contracts
-const CONTRACTS_OUT_DIR = path.join(__dirname, '../../../contracts/out');
+// In production (Docker), contracts are at /app/contracts/out
+// From /app/dist/contracts/abis.js -> ../../ -> /app/contracts/out
+const CONTRACTS_OUT_DIR = path.join(__dirname, '../../contracts/out');
 
 /**
  * Load ABI from compiled contract artifact
