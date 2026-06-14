@@ -8,7 +8,9 @@
       "Bash(npm run build:*)",
       "Bash(docker build:*)",
       "Bash(bash:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(vercel env add:*)",
+      "Bash(vercel:*)"
     ]
   }
 }

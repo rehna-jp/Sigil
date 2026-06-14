@@ -419,7 +419,7 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
     }
   };
 
-  const isPending = step !== 'idle' && step !== 'error' && step !== 'done';
+  const isPending = step === 'checking' || step === 'wrapping' || step === 'approving' || step === 'submitting' || step === 'executing';
 
   return (
     <div className="space-y-6 animate-fade-up">
