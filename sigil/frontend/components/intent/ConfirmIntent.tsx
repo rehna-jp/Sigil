@@ -361,7 +361,7 @@ export function ConfirmIntent({ decomposed, onSuccess, onCancel }: ConfirmIntent
           address: CONTRACTS.arbitrumSepolia.IntentRouter,
           abi: IntentRouterABI,
           functionName: 'executeSegments',
-          args: [intentId, segments],
+          args: [intentId as `0x${string}`, segments],
           gasPrice: parseUnits('0.1', 9),
         });
         await publicClient.waitForTransactionReceipt({ hash: execHash });
