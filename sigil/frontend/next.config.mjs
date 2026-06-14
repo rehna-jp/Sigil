@@ -14,7 +14,7 @@ export default {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.BACKEND_URL || 'http://localhost:3001'}/:path*`,
+        destination: `${process.env.BACKEND_URL || 'http://localhost:3001'}/:path* || https://sigil-backend-724136559213.us-central1.run.app`,
       },
     ];
   },
