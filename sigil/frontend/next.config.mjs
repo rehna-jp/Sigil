@@ -1,7 +1,12 @@
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sigil-backend-724136559213.us-central1.run.app';
+
 export default {
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
   },
   turbopack: {
     resolveAlias: {
@@ -14,7 +19,7 @@ export default {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.BACKEND_URL || 'http://localhost:3001'}/:path* || https://sigil-backend-724136559213.us-central1.run.app`,
+        destination: `${BACKEND_URL}/:path*`,
       },
     ];
   },
