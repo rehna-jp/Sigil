@@ -1,0 +1,57 @@
+# Google Cloud Build configuration for Sigil Backend
+
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/sigil-backend:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/sigil-backend:latest'
+      - '.'
+    dir: 'sigil/backend'
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/sigil-backend:$COMMIT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/sigil-backend:latest'
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'sigil-backend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/sigil-backend:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'PORT=8080'
+      - '--set-secrets'
+      - 'GROQ_API_KEY=GROQ_API_KEY:latest,PRIVATE_KEY=PRIVATE_KEY:latest,ARBITRUM_SEPOLIA_RPC_URL=ARBITRUM_SEPOLIA_RPC_URL:latest'
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+      - '--max-instances'
+      - '10'
+      - '--timeout'
+      - '300'
+
+images:
+  - 'gcr.io/$PROJECT_ID/sigil-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/sigil-backend:latest'
+
+timeout: 1200s
