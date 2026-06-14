@@ -8,8 +8,10 @@ import * as path from 'path';
 
 // Path to compiled contracts
 // In production (Docker), contracts are at /app/contracts/out
-// From /app/dist/contracts/abis.js -> ../../ -> /app/contracts/out
-const CONTRACTS_OUT_DIR = path.join(__dirname, '../../contracts/out');
+// In local dev, contracts are at ../../../contracts/out (from src/contracts/)
+const CONTRACTS_OUT_DIR = fs.existsSync(path.join(__dirname, '../../contracts/out'))
+  ? path.join(__dirname, '../../contracts/out')  // Docker/production
+  : path.join(__dirname, '../../../contracts/out'); // Local development
 
 /**
  * Load ABI from compiled contract artifact

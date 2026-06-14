@@ -42,6 +42,10 @@ export class IntentService {
       // Extract intentId from event logs
       const intentId = this.extractIntentIdFromReceipt(receipt);
 
+      // Execute segments immediately after registration
+      console.log(`Executing ${segments.length} segments for intent ${intentId}`);
+      await this.executeSegments(intentId, segments);
+
       return {
         intentId,
         txHash: tx.hash,
@@ -148,18 +152,17 @@ export class IntentService {
    */
   async executeSegments(intentId: string, segments: Segment[]): Promise<string> {
     try {
-      const protocols = segments.map(s => s.targetProtocol);
-      const callDatas = segments.map(s => s.callData);
-      const values = segments.map(s => s.value);
+      // Calculate total ETH value to send
+      const totalValue = segments.reduce((sum, s) => sum + s.value, 0n);
 
+      // Pass segments as tuple array (matches IntentRouter.executeSegments signature)
       const tx = await this.contracts.router.executeSegments(
         intentId,
-        protocols,
-        callDatas,
-        values,
-        { value: values.reduce((a, b) => a + b, 0n) }
+        segments,
+        { value: totalValue }
       );
 
+      console.log(`Segments executed: ${tx.hash}`);
       await tx.wait();
       return tx.hash;
     } catch (error) {
